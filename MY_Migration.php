@@ -1,5 +1,42 @@
 <?php defined('BASEPATH') OR exit('No direct script access allowed');
 
+if (!function_exists('normalizePath')) {
+
+	/**
+	 * Remove the ".." from the middle of a path string
+	 * @param string $path
+	 * @return string
+	 */
+	function normalizePath($path)
+	{
+		$parts    = array(); // Array to build a new path from the good parts
+		$path     = str_replace('\\', '/', $path); // Replace backslashes with forwardslashes
+		$path     = preg_replace('/\/+/', '/', $path); // Combine multiple slashes into a single slash
+		$segments = explode('/', $path); // Collect path segments
+		foreach ($segments as $segment) {
+			if ($segment != '.') {
+				$test = array_pop($parts);
+				if (is_null($test))
+					$parts[] = $segment;
+				else if ($segment == '..') {
+					if ($test == '..')
+						$parts[] = $test;
+
+					if ($test == '..' || $test == '')
+						$parts[] = $segment;
+				} else {
+					$parts[] = $test;
+					$parts[] = $segment;
+				}
+			}
+		}
+
+		return implode('/', $parts);
+	}
+
+}
+
+
 /**
  * Migration Class for HMVC application
  *
@@ -58,9 +95,9 @@ class MY_Migration
 		// If the migrations table is missing, make it
 		if (!$this->db->table_exists('migrations')) {
 			$this->dbforge->add_field(array(
-										   'module'  => array('type' => 'VARCHAR', 'constraint' => 20),
-										   'version' => array('type' => 'INT', 'constraint' => 3),
-									  ));
+				'module'  => array('type' => 'VARCHAR', 'constraint' => 20),
+				'version' => array('type' => 'INT', 'constraint' => 3),
+			));
 
 			$this->dbforge->create_table('migrations', TRUE);
 
@@ -121,26 +158,11 @@ class MY_Migration
 
 	public function list_all_modules()
 	{
-		$this->load->helper('directory');
-
-		$modules = array();
-
-		foreach (Modules::$locations as $location => $offset) {
-
-			$files = directory_map($location, 1);
-			foreach ($files as $name) {
-				if (is_dir($location . $name))
-					$modules[] = array($location, $name);
-			}
-		}
-
-		return $modules;
+		return modules_list();
 	}
 
 	public function init_module($module = 'CI_core')
 	{
-		$this->load->helper('advanced');
-
 		if ($module === 'CI_core') {
 
 			$config = $this->_core_config;
@@ -372,6 +394,7 @@ class MY_Migration
 	/**
 	 * Retrieves current schema version
 	 *
+	 * @param string $module
 	 * @return    int    Current Migration
 	 */
 	protected function _get_version($module = '')
@@ -387,6 +410,7 @@ class MY_Migration
 	 * Stores the current schema version
 	 *
 	 * @param    int    Migration reached
+	 * @param string $module
 	 * @return    bool
 	 */
 	protected function _update_version($migrations, $module = '')
