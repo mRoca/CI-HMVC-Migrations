@@ -1,4 +1,4 @@
-# CodeIgniter HMVC migration class
+# CodeIgniter HMVC migration class for CodeIgniter 3.0.0
 
 This class permit to use migrations with HMVC modules (work with <https://bitbucket.org/wiredesignz/codeigniter-modular-extensions-hmvc>)
 
@@ -17,3 +17,7 @@ In code usage :
 
 	if ($this->migration->init_module($module_name))
 		$this->migration->version($module_version);
+
+Note:
+
+This code is not compatible with earlier versions of CodeIgniter!
